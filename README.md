@@ -8,7 +8,7 @@ A simple content management system using mySQL as the database/model on the back
 
 ## Installation/Usage Demo Video
 
-[Click here to watch the demo video]()
+[Click here to watch the demo video](https://drive.google.com/file/d/1so5xyZF3UXALOl-sVeW8b1XYzrD6gEXj/view)
 
 ## Technologies
 
@@ -33,6 +33,3 @@ Information and documentation used in the creation of this app, but external to 
 ## License
 
 See LICENSE file in repository
-
-## Credits & Sources
-- 
