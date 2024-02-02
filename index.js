@@ -1,4 +1,4 @@
-const mysql = require('mysql2');
+import mysql from 'mysql2';
 import inquirer from 'inquirer';
 
 const db = mysql.createConnection({
@@ -20,34 +20,63 @@ const baseMenu = [
     'Update role'
 ];
 const displayBaseMenu = () => {
-    inquirer.prompt({
-        name: `displayBaseMenu`,
-        message: `Select an option`,
-        type: `list`,
-        choices: baseMenu,
-    }).then((ans) => {
-        // use the user's answer to run the respective function
-        if (ans.options === `All departments`) {
-            allDepartments();
-        } else if (ans.options === `All roles`) {
-            allRoles();
-        } else if (ans.options === `All persons`) {
-            allPersons();
-        } else if (ans.options === `New department`) {
-            newDepartment();
-        } else if (ans.options === `New role`) {
-            newRole();
-        } else if (ans.options === `New person`) {
-            newPerson();
-        } else if (ans.options === `Update role`) {
-            updateRole();
-        }
-    })
+    inquirer
+        .prompt({
+            name: `option`,
+            message: `Select an option`,
+            type: `list`,
+            choices: baseMenu,
+        })
+        .then((answer) => {
+            const selectedOption = answer.option;
+            switch (selectedOption) {
+                case 'All departments':
+                    allDepartments();
+                    break;
+                case 'All roles':
+                    allRoles();
+                    break;
+                case 'All persons':
+                    allPersons();
+                    break;
+                case 'New department':
+                    newDepartment();
+                    break;
+                case 'New role':
+                    newRole();
+                    break;
+                case 'New person':
+                    newPerson();
+                    break;
+                case 'Update role':
+                    updateRole();
+                    break;
+                default:
+                    console.log('You have to either choose something, or quit.');
+                    displayBaseMenu();
+            }
+        });
 };
 
 const allDepartments = () => {
-    connection.query(
-        `SELECT * FROM department`, (err, results) => {
+    db.query(
+        `SELECT id, name FROM department`, (err, results, fields) => {
+            console.log("Executing query: SELECT id, name FROM department"); // Add this line
+            if (err) {
+                console.error("Error executing query:", err); // Add this line
+            } else {
+                console.log("Results from the query:", results); // Add this line
+                console.table(results);
+            }
+            // return to base menu after displaying results
+            displayBaseMenu();
+        }
+    );
+};
+
+const allRoles = () => {
+    db.query(
+        `SELECT role.id, role.title, role.salary, department.name AS department FROM role LEFT JOIN department ON role.department_id = department.id`, (err, results) => {
             if (err) {
                 console.log(err);
             } else {
@@ -59,22 +88,8 @@ const allDepartments = () => {
     )
 };
 
-const allRoles = () => {
-    connection.query(
-        `SELECT role.id, role.title, role.salary, department.name AS department FROM role LEFT JOIN department ON role.department_id = department.id`, (err, results) => {
-            if (err) {
-                console.log(err);
-            } else {
-                console.table(results);
-            }
-            // return to base menu after displaying results
-            displayOptions();
-        }
-    )
-};
-
 const allPersons = () => {
-    connection.query(
+    db.query(
         `SELECT e.id, e.first_name, e.last_name, 
             department.name AS department, 
             role.title, role.salary, 
@@ -99,7 +114,7 @@ const newDepartment = () => {
         message: `What is the new department called?`,
         type: `input`,
     }).then((ans) => {
-        connection.query(
+        db.query(
             `INSERT INTO department (name) VALUES (?)`, [ans.newDepartment],
             (err) => {
                 if (err) {
@@ -116,8 +131,8 @@ const newDepartment = () => {
 
 const newRole = () => {
     let currentDepartments;
-    let selectedId;
-    connection.query(
+    let selectedDepartment;
+    db.query(
         `SELECT * FROM department`, (err, result) => {
             if (err) {
                 console.log(err);
@@ -145,30 +160,32 @@ const newRole = () => {
                     choices: departmentNames,
                 }
             ]).then((ans) => {
-                // get selected id
-                for (let i = 0; i < departmentNames.length; i++) {
-                    if (ans.departments === currentDepartments[i].name){
-                        selectedId = currentDepartments[i].id
-                    };
-                };
-                // add new departments 
-                connection.query(
+                // get selected department
+                selectedDepartment = currentDepartments.find(item => item.name === ans.department);
+
+                if (!selectedDepartment) {
+                    console.log('Error: Selected department not found.');
+                    displayBaseMenu();
+                    return;
+                }
+
+                // add new role
+                db.query(
                     `INSERT INTO role (title, salary, department_id) VALUES (?, ?, ?)`,
-                    [ans.newRole, ans.salary, selectedId],
+                    [ans.newRole, ans.salary, selectedDepartment.id],
                     (err) => {
                         if (err) {
                             console.log(err);
                         } else {
                             console.log(`Added ${ans.newRole} to database :)`);
-                        }; 
+                        }
                         // return to base menu after displaying results
-                        displayBaseMenu();               
+                        displayBaseMenu();
                     }
-                )
-            })
-        }        
-    );    
-    
+                );
+            });
+        }
+    );
 };
 
 const newPerson = () => {
@@ -177,7 +194,7 @@ const newPerson = () => {
     let roleId;
     let managerId;
     // save the current roles into a variable
-    connection.query(
+    db.query(
         `SELECT role.id, role.title FROM role`, (err, result) => {
             if (err) {
                 console.log(err);
@@ -186,7 +203,7 @@ const newPerson = () => {
 
             const roleNames = currentRoles.map(item => item.title)
             
-            connection.query(
+            db.query(
                 `SELECT person.id, CONCAT(first_name, ' ', last_name) AS manager_name FROM person WHERE manager_id IS NULL`, (err, result) => {
                     if (err) {
                         console.log(err);
@@ -239,7 +256,7 @@ const newPerson = () => {
                         };
                         
                         // add the new departments 
-                        connection.query(
+                        db.query(
                             `INSERT INTO person (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)`,
                             [ans.firstName, ans.lastName, roleId, managerId],
                             (err) => {
@@ -264,7 +281,7 @@ const updateRole = () => {
     let currentPersons;
     let roleId;
     let personId;
-    connection.query(
+    db.query(
         `SELECT person.id, CONCAT(first_name, ' ', last_name) AS person_name FROM person`, (err, result) => {
             if (err) {
                 console.log(err);
@@ -272,7 +289,7 @@ const updateRole = () => {
             currentPersons = result;
             const employeeNames = currentPersons.map(item => item.employee_name) 
 
-            connection.query(
+            db.query(
                 `SELECT role.id, role.title FROM role`, (err, result) => {
                     if (err) {
                         console.log(err);
@@ -307,7 +324,7 @@ const updateRole = () => {
                             };
                         };
                         // update the role
-                        connection.query(
+                        db.query(
                             `UPDATE person 
                              SET role_id = ?
                              WHERE id = ?`,
