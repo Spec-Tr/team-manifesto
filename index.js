@@ -281,13 +281,13 @@ const updateRole = () => {
     let currentPersons;
     let roleId;
     let personId;
+    
     db.query(
         `SELECT person.id, CONCAT(first_name, ' ', last_name) AS person_name FROM person`, (err, result) => {
             if (err) {
                 console.log(err);
             };
             currentPersons = result;
-            // const employeeNames = currentPersons.map(item => item.employee_name); 
 
             db.query(
                 `SELECT role.id, role.title FROM role`, (err, result) => {
@@ -302,7 +302,10 @@ const updateRole = () => {
                             name: `employee`,
                             message: `Which person's role do you want to update?`,
                             type: `list`,
-                            choices: currentPersons.map(item => item.person_name),
+                            choices: currentPersons.map(item => ({
+                                name: item.person_name,
+                                value: item.id, // Include the person ID for later use
+                            })),
                         },
                         {
                             name: `newRole`,
@@ -311,19 +314,17 @@ const updateRole = () => {
                             choices: roleNames,
                         },
                     ]).then((ans) => {
-                        // get the id of the employee that the user selected
-                        for (let i = 0; i < currentPersons.length; i++) {
-                            if (ans.employee == currentPersons[i].employee_name){
-                                personId = currentPersons[i].id
-                            };
-                        };
-                        // get the id of the new role that the user selected
+                        // Get the id of the employee that the user selected
+                        personId = ans.employee;
+
+                        // Get the id of the new role that the user selected
                         for (let i = 0; i < currentRoles.length; i++) {
-                            if (ans.newRole === currentRoles[i].title){
+                            if (ans.newRole === currentRoles[i].title) {
                                 roleId = currentRoles[i].id
                             };
                         };
-                        // update the role
+
+                        // Update the role
                         db.query(
                             `UPDATE person 
                              SET role_id = ?
@@ -335,7 +336,7 @@ const updateRole = () => {
                                 } else {
                                     console.log(`Successfully updated role`);
                                 }; 
-                                 // return to base menu after displaying results
+                                 // Return to base menu after displaying results
                                 displayBaseMenu();               
                             }
                         )
@@ -345,5 +346,6 @@ const updateRole = () => {
         }
     );
 };
+
 
 displayBaseMenu();
