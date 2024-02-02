@@ -61,11 +61,11 @@ const displayBaseMenu = () => {
 const allDepartments = () => {
     db.query(
         `SELECT id, name FROM department`, (err, results, fields) => {
-            console.log("Executing query: SELECT id, name FROM department"); // Add this line
+            console.log("Executing query: SELECT id, name FROM department"); 
             if (err) {
-                console.error("Error executing query:", err); // Add this line
+                console.error("Error executing query:", err); 
             } else {
-                console.log("Results from the query:", results); // Add this line
+                console.log("Results from the query:", results);
                 console.table(results);
             }
             // return to base menu after displaying results
@@ -193,7 +193,7 @@ const newPerson = () => {
     let currentManagers;
     let roleId;
     let managerId;
-    // save the current roles into a variable
+    // save current roles into a variable
     db.query(
         `SELECT role.id, role.title FROM role`, (err, result) => {
             if (err) {
@@ -214,7 +214,7 @@ const newPerson = () => {
                     
                     managerNames.push(`None`);
 
-                    // ask the user for the information of the new employee
+                    // ask the user for input to add new person to database
                     inquirer.prompt([
                         {
                             name: `firstName`,
@@ -287,7 +287,7 @@ const updateRole = () => {
                 console.log(err);
             };
             currentPersons = result;
-            const employeeNames = currentPersons.map(item => item.employee_name) 
+            // const employeeNames = currentPersons.map(item => item.employee_name); 
 
             db.query(
                 `SELECT role.id, role.title FROM role`, (err, result) => {
@@ -302,7 +302,7 @@ const updateRole = () => {
                             name: `employee`,
                             message: `Which person's role do you want to update?`,
                             type: `list`,
-                            choices: employeeNames,
+                            choices: currentPersons.map(item => item.person_name),
                         },
                         {
                             name: `newRole`,
